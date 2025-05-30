@@ -20,8 +20,12 @@ private:
 public:
     OptimalSolver();
     std::vector<int> RandomPermutation(int node_num);
-    void SimulatedAnnealing(const NetworkManager &network);
-    void VariableNeighborhoodSearch(const NetworkManager &network);
-    void BridgeMove(const NetworkManager &network, const std::vector<int> original_path);
     int solve(const NetworkManager &network, std::string method_solve);
+
+    void SimulatedAnnealing(const NetworkManager &network);
+
+    void VariableNeighborhoodSearch(const NetworkManager &network);
+    std::vector<int> BridgeMove(const NetworkManager &network, const std::vector<int> &original_path);
+    std::vector<int> Neighborhood_one(const NetworkManager &network, const std::vector<int> &original_path);
+    std::tuple<std::vector<int>, double> VariableNeighborhoodDescent(const NetworkManager &network, const std::vector<int> &created_path);
 };

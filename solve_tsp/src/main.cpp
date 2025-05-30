@@ -10,7 +10,7 @@ int main()
 {
 
     // 获取文件路径
-    std::filesystem::path txt_path = std::filesystem::path(__FILE__).parent_path() / "../data/china31.txt";
+    std::filesystem::path txt_path = std::filesystem::path(__FILE__).parent_path() / "../data/berlin52.txt";
     NetworkManager network;
     network.LoadData(txt_path);
 
@@ -19,6 +19,6 @@ int main()
     //     std::cout << "id: " << it->first << ", coordinates: (" << it->second.first << ", " << it->second.second << ")\n";
     // }
     auto solver = OptimalSolver();
-    solver.solve(network, "SA");
+    solver.solve(network, "VNS");
     return 0;
 }

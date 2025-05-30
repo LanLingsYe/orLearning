@@ -22,7 +22,7 @@ int NetworkManager::LoadData(std::filesystem::path data_path)
         if (getline(iss, name, ',') && (iss >> lon >> comma >> lat))
         {
             NodeMap.emplace(id, std::make_pair(lon, lat));
-            node_id.push_back(id);
+            node_id.emplace_back(id);
         }
         id++;
     }
