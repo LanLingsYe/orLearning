@@ -24,8 +24,9 @@ public:
 
     void SimulatedAnnealing(const NetworkManager &network);
 
+    void BridgeMove(const NetworkManager &network, std::vector<int> &path);
+    double Neighborhood_one(const NetworkManager &network, std::vector<int> &path);
+    double Neighborhood_two(const NetworkManager &network, std::vector<int> &path);
+    double VariableNeighborhoodDescent(const NetworkManager &network, std::vector<int> &created_path);
     void VariableNeighborhoodSearch(const NetworkManager &network);
-    std::vector<int> BridgeMove(const NetworkManager &network, const std::vector<int> &original_path);
-    std::vector<int> Neighborhood_one(const NetworkManager &network, const std::vector<int> &original_path);
-    std::tuple<std::vector<int>, double> VariableNeighborhoodDescent(const NetworkManager &network, const std::vector<int> &created_path);
 };
