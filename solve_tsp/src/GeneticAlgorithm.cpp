@@ -37,6 +37,22 @@ void BridgeMove(const NetworkManager &network, std::vector<int> &path)
     return;
 };
 
+/// The UpdateSequence function updates the PopulationId array
+/// by sorting elements from the FitnessMap based on their fitness values.
+/// It ensures that the PopulationId reflects the order of individuals
+/// from the best to the worst fitness, allowing for selection in genetic algorithms.
+void UpdateSequence()
+{
+    std::vector<std::pair<int, double>> tmp_vec(FitnessMap.begin(), FitnessMap.end());
+    std::sort(tmp_vec.begin(), tmp_vec.end(),
+              [](const auto &a, const auto &b)
+              { return a.second <= b.second; });
+    for (size_t i = 0; i < population_size; ++i)
+    {
+        PopulationId[i] = tmp_vec[i].first;
+    }
+}
+
 void InitPack(const NetworkManager &network)
 {
     for (size_t i = 0; i < population_size; ++i)
@@ -50,6 +66,8 @@ void InitPack(const NetworkManager &network)
 void OptimalSolver::GeneticAlgorithm(const NetworkManager &network)
 {
     size_t iter = 0, non_iter = 0;
+    InitPack(network);
+    UpdateSequence();
     while (iter <= max_iteration && non_iter <= mature_iteration)
     {
         iter++;

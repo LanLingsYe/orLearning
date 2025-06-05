@@ -23,7 +23,7 @@ std::vector<int> OptimalSolver::RandomPermutation(int node_num)
 
 int OptimalSolver::solve(const NetworkManager &network, std::string method_solve)
 {
-    // 开始计时
+    // start timing
     auto start = std::chrono::high_resolution_clock::now();
 
     if (method_solve == "SA")
@@ -31,9 +31,9 @@ int OptimalSolver::solve(const NetworkManager &network, std::string method_solve
         SimulatedAnnealing(network);
     }
 
-    // 结束计时
+    // end timing
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    std::cout << "代码执行时间: " << duration.count() << " 微秒" << std::endl;
+    std::cout << "Execution time: " << duration.count() << " microseconds" << std::endl;
     return 0;
 };
