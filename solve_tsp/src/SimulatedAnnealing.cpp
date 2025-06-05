@@ -1,5 +1,17 @@
 #include "OptimalSolver.hpp"
 
+/// The gen is a static member of the OptimalSolver class
+/// that utilizes the std::mt19937_64 engine to generate high-quality 64-bit pseudo-random numbers,
+/// suitable for applications like stochastic algorithms, simulations, and reproducible random number sequences.
+static std::mt19937_64 gen{std::random_device{}()};
+/// The temperature_start represents the initial temperature value
+/// used in processes within the OptimalSolver class.
+size_t temperature_start = 50000;
+/// The temperature_end represents the final temperature value
+/// used in processes within the OptimalSolver class.
+double temperature_end = 1e-4;
+double q = 0.98;
+
 void OptimalSolver::SimulatedAnnealing(const NetworkManager &network)
 {
     std::uniform_real_distribution<double> dis(0.0, 1.0);

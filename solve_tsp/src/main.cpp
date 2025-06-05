@@ -10,7 +10,7 @@ int main()
 {
 
     // 获取文件路径
-    std::filesystem::path txt_path = std::filesystem::path(__FILE__).parent_path() / "../data/berlin52.txt";
+    std::filesystem::path txt_path = std::filesystem::path(__FILE__).parent_path() / "../data/att48.txt";
     NetworkManager network;
     network.LoadData(txt_path);
 
