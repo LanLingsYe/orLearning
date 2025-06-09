@@ -6,10 +6,10 @@
 static std::mt19937_64 gen{std::random_device{}()};
 
 size_t population_size = 100;
-double mutation_rate = 0.1;
+double mutation_rate = 0.15;
 double crossover_rate = 0.9;
 std::vector<int> PopulationId;
-std::map<int, std::vector<int>> PopulationMap;
+std::map<int, std::vector<double>> PopulationGene;
 std::map<int, double> FitnessMap;
 
 void BridgeMove(const NetworkManager &network, std::vector<int> &path)
@@ -46,20 +46,107 @@ void UpdateSequence()
     std::vector<std::pair<int, double>> tmp_vec(FitnessMap.begin(), FitnessMap.end());
     std::sort(tmp_vec.begin(), tmp_vec.end(),
               [](const auto &a, const auto &b)
-              { return a.second <= b.second; });
+              { return a.second < b.second; });
     for (size_t i = 0; i < population_size; ++i)
     {
         PopulationId[i] = tmp_vec[i].first;
     }
 }
 
-void InitPack(const NetworkManager &network)
+/// The GenerateGene function creates a random gene of specified size.
+/// It fills the gene with random double values between 0.0 and 1.0,
+std::vector<double> GenerateGene(int gene_size)
+{
+    std::vector<double> gene;
+    gene.reserve(gene_size);
+    std::uniform_real_distribution<double> dis(0.0, 1.0);
+    for (int i = 0; i < gene_size; ++i)
+    {
+        gene.emplace_back(dis(gen));
+    }
+    return gene;
+}
+
+/// The Decoder function represents a permutation of indices
+/// based on the ascending order of the input values.
+std::vector<int> Decoder(const std::vector<double> &gene)
+{
+    std::vector<int> path;
+    path.reserve(gene.size());
+    std::vector<int> indices(gene.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(),
+              [&gene](int i, int j)
+              { return gene[i] < gene[j]; });
+    for (int i = 0; i < indices.size(); ++i)
+    {
+        path[indices[i]] = i;
+    }
+    return path;
+}
+
+/// The UpdateFitness function calculates the fitness of each individual in the population
+/// by evaluating the path length of the decoded gene.
+void UpdateFitness(const NetworkManager &network)
 {
     for (size_t i = 0; i < population_size; ++i)
     {
+        FitnessMap[PopulationId[i]] = network.CalculatePathLength(Decoder(PopulationGene[PopulationId[i]]));
+    }
+}
+
+/// The InitPack function initializes the population for the genetic algorithm.
+void InitPack(const NetworkManager &network)
+{
+    for (size_t i = PopulationId.size(); i < PopulationId.size() + population_size; ++i)
+    {
         PopulationId.emplace_back(i);
-        PopulationMap.emplace(i, OptimalSolver::RandomPermutation(network.node_num));
-        FitnessMap.emplace(i, network.CalculatePathLength(PopulationMap[i]));
+        PopulationGene.emplace(i, GenerateGene(network.node_num));
+        FitnessMap.emplace(i, network.CalculatePathLength(Decoder(PopulationGene[i])));
+    }
+    UpdateSequence();
+}
+
+void Mutate(const NetworkManager &network)
+{
+    size_t mutate_num = network.node_num / 50 + 1;
+    std::uniform_real_distribution<double> dis(0.0, 1.0);
+    std::uniform_int_distribution<int> int_dis(0, network.node_num - 1);
+    for (size_t i = 0; i < population_size; ++i)
+    {
+        if (dis(gen) <= mutation_rate)
+        {
+            for (size_t j = 0; j < mutate_num; ++j)
+            {
+                PopulationGene[PopulationId[i]][int_dis(gen)] = dis(gen);
+            }
+        }
+        else
+        {
+            continue;
+        }
+    }
+    UpdateFitness(network);
+    UpdateSequence();
+}
+
+void Migrate(const NetworkManager &network, size_t mature_degree)
+{
+    size_t migrate_num = mature_degree * population_size;
+    for (size_t i = PopulationId.size(); i < PopulationId.size() + migrate_num; ++i)
+    {
+        PopulationId.emplace_back(i);
+        PopulationGene.emplace(i, GenerateGene(network.node_num));
+        FitnessMap.emplace(i, network.CalculatePathLength(Decoder(PopulationGene[i])));
+    }
+    UpdateSequence();
+}
+
+void Compete()
+{
+    if (PopulationId.size() <= population_size)
+    {
+        return;
     }
 }
 
@@ -67,7 +154,6 @@ void OptimalSolver::GeneticAlgorithm(const NetworkManager &network)
 {
     size_t iter = 0, non_iter = 0;
     InitPack(network);
-    UpdateSequence();
     while (iter <= max_iteration && non_iter <= mature_iteration)
     {
         iter++;
