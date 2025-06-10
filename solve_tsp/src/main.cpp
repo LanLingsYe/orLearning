@@ -19,6 +19,6 @@ int main()
     //     std::cout << "id: " << it->first << ", coordinates: (" << it->second.first << ", " << it->second.second << ")\n";
     // }
     auto solver = OptimalSolver();
-    solver.solve(network, "VNS");
+    solver.solve(network, "GA");
     return 0;
 }

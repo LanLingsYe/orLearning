@@ -31,6 +31,11 @@ int OptimalSolver::solve(const NetworkManager &network, std::string method_solve
         SimulatedAnnealing(network);
     }
 
+    if (method_solve == "GA")
+    {
+        GeneticAlgorithm(network);
+    }
+
     // end timing
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);

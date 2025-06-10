@@ -7,7 +7,8 @@ static std::mt19937_64 gen{std::random_device{}()};
 
 size_t population_size = 100;
 double mutation_rate = 0.15;
-double crossover_rate = 0.9;
+double cross_over_rate = 0.9;
+size_t cross_over_num = 2;
 std::vector<int> PopulationId;
 std::map<int, std::vector<double>> PopulationGene;
 std::map<int, double> FitnessMap;
@@ -95,6 +96,37 @@ void UpdateFitness(const NetworkManager &network)
     }
 }
 
+/// The CrossOver function performs crossover on the population
+/// by selecting a specified number of parents and generating offspring.
+void CrossOver(const NetworkManager &network)
+{
+    size_t parent_num = population_size * cross_over_rate;
+    if (parent_num % 2 != 0)
+    {
+        parent_num -= 1; // Ensure even number of parents for crossover
+    }
+    std::vector<int> parents(PopulationId.begin(), PopulationId.begin() + parent_num);
+    std::map<int, std::vector<double>> offspring_gene(PopulationGene);
+    for (size_t i = 0; i < parent_num; i += 2)
+    {
+        for (size_t j = 0; j < cross_over_num; ++j)
+        {
+            size_t position1 = std::uniform_int_distribution<size_t>(0, network.node_num - 1)(gen);
+            size_t position2 = std::uniform_int_distribution<size_t>(0, network.node_num - 1)(gen);
+            std::swap(offspring_gene[parents[i]][position1], offspring_gene[parents[i + 1]][position2]);
+        }
+    }
+
+    size_t current_population_size = PopulationId.size();
+    for (size_t i = 0; i < offspring_gene.size(); ++i)
+    {
+        PopulationId.emplace_back(current_population_size + i);
+        PopulationGene.emplace(current_population_size + i, offspring_gene[i]);
+        FitnessMap.emplace(current_population_size + i, network.CalculatePathLength(Decoder(offspring_gene[i])));
+    }
+    UpdateSequence();
+}
+
 /// The InitPack function initializes the population for the genetic algorithm.
 void InitPack(const NetworkManager &network)
 {
@@ -130,6 +162,8 @@ void Mutate(const NetworkManager &network)
     UpdateSequence();
 }
 
+/// The Migrate function adds new individuals to the population
+/// based on the specified mature degree, which determines how many new individuals to add.
 void Migrate(const NetworkManager &network, size_t mature_degree)
 {
     size_t migrate_num = mature_degree * population_size;
@@ -142,79 +176,69 @@ void Migrate(const NetworkManager &network, size_t mature_degree)
     UpdateSequence();
 }
 
+/// The Compete function reduces the population size to the specified population_size
+/// by removing individuals with the worst fitness values.
 void Compete()
 {
     if (PopulationId.size() <= population_size)
     {
         return;
     }
+
+    for (size_t i = population_size; i < PopulationId.size(); ++i)
+    {
+        PopulationGene.erase(PopulationId[i]);
+        FitnessMap.erase(PopulationId[i]);
+    }
+    PopulationId.erase(PopulationId.begin() + population_size, PopulationId.end());
+
+    std::map<int, std::vector<double>> PopulationGene_;
+    std::map<int, double> FitnessMap_;
+    std::vector<int> indices(PopulationId.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(), [](int i, int j)
+              { return PopulationId[i] < PopulationId[j]; });
+    std::vector<int> ranks(PopulationId.size());
+    for (int i = 0; i < indices.size(); ++i)
+    {
+        ranks[indices[i]] = i;
+    }
+
+    for (int i = 0; i < population_size; ++i)
+    {
+        PopulationGene_[PopulationId[i]] = PopulationGene[PopulationId[indices[i]]];
+        FitnessMap_[PopulationId[i]] = FitnessMap[PopulationId[indices[i]]];
+    }
+    PopulationGene = std::move(PopulationGene_);
+    FitnessMap = std::move(FitnessMap_);
+    PopulationId = std::move(ranks);
 }
 
 void OptimalSolver::GeneticAlgorithm(const NetworkManager &network)
 {
     size_t iter = 0, non_iter = 0;
     InitPack(network);
+    double best_fitness = FitnessMap[PopulationId[0]];
     while (iter <= max_iteration && non_iter <= mature_iteration)
     {
-        iter++;
-        non_iter++;
-        std::vector<int> current_path = RandomPermutation(network.node_num);
-        double current_value = network.CalculatePathLength(current_path);
-        std::vector<int> new_path = current_path;
-        BridgeMove(network, new_path);
-        double new_value = network.CalculatePathLength(new_path);
-        if (new_value < current_value)
-        {
-            current_path = new_path;
-            current_value = new_value;
-            non_iter = 0;
-        }
-        std::cout << "当前迭代次数: " << iter << ", 最优路径长度: " << current_value << std::endl;
-    }
-    {
-        std::vector<std::vector<int>> population(population_size);
-        for (size_t i = 0; i < population_size; ++i)
-        {
-            population[i] = RandomPermutation(network.node_num);
-        }
+        ++iter;
+        CrossOver(network);
+        Mutate(network);
+        Migrate(network, iter / max_iteration);
+        Compete();
 
-        std::vector<double> fitness(population_size);
-        for (size_t i = 0; i < population_size; ++i)
+        if (FitnessMap[PopulationId[0]] < best_fitness)
         {
-            fitness[i] = network.CalculatePathLength(population[i]);
+            best_fitness = FitnessMap[PopulationId[0]];
+            non_iter = 0; // Reset non-iteration counter if a better solution is found
         }
-
-        std::vector<std::vector<int>> new_population;
-        while (new_population.size() < population_size)
+        else
         {
-            std::uniform_int_distribution<int> int_dis(0, population_size - 1);
-            int parent1_idx = int_dis(gen);
-            int parent2_idx = int_dis(gen);
-
-            if (gen() / static_cast<double>(gen.max()) < crossover_rate)
-            {
-                std::vector<int> child1, child2;
-                // Crossover logic here
-                // ...
-                new_population.push_back(child1);
-                new_population.push_back(child2);
-            }
-            else
-            {
-                new_population.push_back(population[parent1_idx]);
-                new_population.push_back(population[parent2_idx]);
-            }
+            ++non_iter; // Increment non-iteration counter if no improvement
         }
-
-        for (auto &individual : new_population)
+        if (iter % 10 == 0)
         {
-            if (gen() / static_cast<double>(gen.max()) < mutation_rate)
-            {
-                BridgeMove(network, individual);
-            }
+            std::cout << "Iteration: " << iter << ", Best Fitness: " << best_fitness << std::endl;
         }
-
-        population = new_population;
-        counter++;
     }
 }
