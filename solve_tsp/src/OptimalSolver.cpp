@@ -9,7 +9,7 @@ OptimalSolver::OptimalSolver()
 {
     this->tolerance = 5e-4;
     this->max_iteration = 1000;
-    this->mature_iteration = 40;
+    this->mature_iteration = 100;
 };
 
 std::vector<int> OptimalSolver::RandomPermutation(int node_num)

@@ -72,8 +72,7 @@ std::vector<double> GenerateGene(int gene_size)
 /// based on the ascending order of the input values.
 std::vector<int> Decoder(const std::vector<double> &gene)
 {
-    std::vector<int> path;
-    path.reserve(gene.size());
+    std::vector<int> path(gene.size());
     std::vector<int> indices(gene.size());
     std::iota(indices.begin(), indices.end(), 0);
     std::sort(indices.begin(), indices.end(),
@@ -117,6 +116,7 @@ void CrossOver(const NetworkManager &network)
         }
     }
 
+    offspring_gene.erase(std::next(offspring_gene.begin(), parent_num), offspring_gene.end());
     size_t current_population_size = PopulationId.size();
     for (size_t i = 0; i < offspring_gene.size(); ++i)
     {
@@ -130,7 +130,8 @@ void CrossOver(const NetworkManager &network)
 /// The InitPack function initializes the population for the genetic algorithm.
 void InitPack(const NetworkManager &network)
 {
-    for (size_t i = PopulationId.size(); i < PopulationId.size() + population_size; ++i)
+    size_t initial_population_size = PopulationId.size();
+    for (size_t i = initial_population_size; i < initial_population_size + population_size; ++i)
     {
         PopulationId.emplace_back(i);
         PopulationGene.emplace(i, GenerateGene(network.node_num));
@@ -206,8 +207,8 @@ void Compete()
 
     for (int i = 0; i < population_size; ++i)
     {
-        PopulationGene_[PopulationId[i]] = PopulationGene[PopulationId[indices[i]]];
-        FitnessMap_[PopulationId[i]] = FitnessMap[PopulationId[indices[i]]];
+        PopulationGene_[i] = PopulationGene[ranks[i]];
+        FitnessMap_[i] = FitnessMap[ranks[i]];
     }
     PopulationGene = std::move(PopulationGene_);
     FitnessMap = std::move(FitnessMap_);
